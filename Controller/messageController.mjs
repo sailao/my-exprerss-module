@@ -1,67 +1,54 @@
-import mongodb from 'mongodb';
+import mongoose from 'mongoose';
+import Message from '../Model/Message.mjs';
+
+const DBconnect = _ =>  mongoose.connect(process.env.DB_HOST, { useNewUrlParser: true, useUnifiedTopology: true }); 
 
 const index = ({res}) => {
-    mongodb.MongoClient.connect(process.env.DB_HOST, { useUnifiedTopology: true }, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        dbo.collection("messages").find({text:{$exists: true}}, { projection: { _id: 1, text: 1 } }).toArray(function(err, result) {
-            if (err) throw err;
-            db.close();
-            res.json(result);
-        });
+    DBconnect();
+    Message.find({}, (err, data)=>{
+        if(err) console.log(err)
+        res.json(data);
     });
 }
 
 const show = (req, res) => {
-    mongodb.MongoClient.connect(process.env.DB_HOST, { useUnifiedTopology: true }, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        dbo.collection("messages").findOne({"_id": mongodb.ObjectId(req.params.id)}, function(err, result) {
-            if (err) throw err;
-            res.json(result);
-            db.close();
-        });
+    DBconnect();
+    Message.findById(req.params.id, (err, data)=>{
+        if(err) console.log(err)
+        res.json(data);
     });
 }
 
 const store = (req, res) => {
-    mongodb.MongoClient.connect(process.env.DB_HOST, { useUnifiedTopology: true }, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        dbo.collection("messages").insertOne({"text": req.body.text}, function(err, result) {
-            if (err) throw err;
-            res.redirect(`/api/v1/messages`);
-            db.close();
-        });
+    DBconnect();
+    var message = new Message({
+        text: req.body.text
+    });
+
+    message.save((err, data)=>{
+        if(err) console.log(err)
+        res.json(data);
     });
 }
-
+    
 const update = (req, res) => {
-    Messages((message, db) =>{
-        message.updateOne({"_id": mongodb.ObjectId(req.params.id)},{$set:{"text": req.body.text}}, function(err, result) {
-            if (err) throw err;
-            db.close();
-        });
+    DBconnect();
+    Message.findById(req.params.id, (err, data)=>{
+        if(err) console.log(err);
+        data.text = req.body.text;
+        data.save(function(err,data){
+            if(err) console.log(err);
+            res.redirect(`/api/v1/messages/${req.params.id}`);
+        })
     });
-    res.redirect(`/api/v1/messages/${req.params.id}`);
 }
 
 const destory = (req, res) => {
-    Messages((message, db) =>{
-        message.deleteOne({"_id": mongodb.ObjectId(req.params.id)}, function(err, result) {
-            if (err) throw err;
-            db.close();
-        });
+    DBconnect();
+    Message.findByIdAndRemove(req.params.id, (err, data)=>{
+        if(err) console.log(err)
+        res.redirect(`/api/v1/messages`);
     });
-    res.redirect(`/api/v1/messages`);
 }
 
-const Messages = init => {
-    mongodb.MongoClient.connect(process.env.DB_HOST, { useUnifiedTopology: true }, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        var message = dbo.collection("messages");
-        init(message, db);
-    });
-}
 export default {index, show, store, update, destory};
