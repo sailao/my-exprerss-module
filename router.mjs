@@ -12,7 +12,7 @@ const routes = (app) => {
     app.route('/api/v1/messages/:id')
         .get(messageRouter.show)
         .patch(messageRouter.update)
-        .post(messageRouter.destory);
+        .delete(messageRouter.destory);
 };
 
 export default routes;
