@@ -38,7 +38,7 @@ const store = (req, res) => {
 
 const update = (req, res) => {
     Messages((message, db) =>{
-        message.deleteOne({"_id": mongodb.ObjectId(req.params.id)}, function(err, result) {
+        message.updateOne({"_id": mongodb.ObjectId(req.params.id)},{$set:{"text": req.body.text}}, function(err, result) {
             if (err) throw err;
             db.close();
         });
